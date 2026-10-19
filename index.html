@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SastaBazaar - Citizen Price Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #059669; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .report-card { transition: all 0.3s ease; }
+        .report-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2); }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-approved { background: #d1fae5; color: #065f46; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-emerald-50/30 to-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-white/15 p-2 rounded-xl">
+                    <i class="fa-solid fa-scale-balanced text-xl text-emerald-300"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">SastaBazaar</h1>
+            </div>
+            <div id="auth-nav-section" class="flex items-center space-x-3"></div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- Auth Section -->
+        <section id="auth-section" class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden fade-in">
+                <div class="bg-gradient-to-r from-emerald-700 to-emerald-900 px-8 py-6 text-center text-white">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/10 mb-2">
+                        <i class="fa-solid fa-scale-balanced text-2xl text-emerald-300"></i>
+                    </div>
+                    <h2 id="auth-title" class="text-2xl font-bold tracking-tight">Login to SastaBazaar</h2>
+                    <p class="text-xs text-emerald-200 mt-1">Empowering citizens against price inflation & overcharging</p>
+                </div>
+                <div class="p-8">
+                    <form id="auth-form" class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Email Address</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-envelope text-sm"></i>
+                                </span>
+                                <input type="email" id="auth-email" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition" placeholder="name@example.com">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-lock text-sm"></i>
+                                </span>
+                                <input type="password" id="auth-password" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition" placeholder="••••••••">
+                            </div>
+                        </div>
+                        <button type="submit" id="auth-submit-btn" class="w-full py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl shadow-lg shadow-emerald-700/20 transition text-sm tracking-wide">
+                            Login
+                        </button>
+                    </form>
+                    <div class="mt-6 text-center pt-4 border-t border-slate-100 flex items-center justify-center space-x-1.5 text-sm">
+                        <span id="auth-toggle-text" class="text-slate-500">Don't have an account?</span>
+                        <button id="auth-toggle-btn" class="font-bold text-emerald-700 hover:text-emerald-800 transition underline focus:outline-none">Sign Up</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="hidden space-y-6">
+
+            <!-- Welcome & Bonus Tracker Bar -->
+            <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 fade-in">
+                <div>
+                    <h2 class="text-xl font-bold">Welcome back, <span id="user-email-display">User</span>! 👋</h2>
+                    <p class="text-xs text-emerald-200 mt-1">Report vendor price gouging, earn points, and earn community rewards.</p>
+                </div>
+                <div class="flex items-center space-x-4 bg-white/10 px-4 py-2.5 rounded-xl border border-white/10 w-full md:w-auto justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-semibold text-emerald-200 tracking-wider">Your Points</div>
+                        <div class="text-xl font-black text-amber-300"><span id="user-points-display">0</span> pts</div>
+                    </div>
+                    <button onclick="openRedeemModal()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 text-xs font-bold px-3 py-2 rounded-lg transition shadow">
+                        Redeem Vouchers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daily Bonus Progress -->
+            <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-gift text-2xl text-amber-600"></i>
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-900 uppercase tracking-wider">Daily Early Reporter Bonus (+50 Points)</h4>
+                        <p id="bonus-slots-text" class="text-xs text-amber-700 font-medium">Checking available bonus slots...</p>
+                    </div>
+                </div>
+                <div class="w-full sm:w-48 bg-amber-200 rounded-full h-2.5 overflow-hidden">
+                    <div id="bonus-progress-bar" class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Rates & Report Form -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-clipboard-list text-emerald-600 mr-2"></i> Official Govt Price List
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="rate-search" placeholder="Search item..." class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                            <select id="rate-category-filter" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                                <option value="all">All Categories</option>
+                                <option value="Vegetable">Vegetable</option>
+                                <option value="Fruit">Fruit</option>
+                                <option value="Poultry">Poultry</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px]">
+                                <tr>
+                                    <th class="p-3">Item Name</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Unit</th>
+                                    <th class="p-3">Govt Rate</th>
+                                    <th class="p-3">Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rates-table-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center text-rose-600">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Report Overcharging
+                    </h3>
+                    <form id="report-form" class="space-y-3 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Vendor / Shop Name *</label>
+                            <input type="text" id="report-shop-name" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="e.g. Al-Madina Vegetables">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Shop Location / Address *</label>
+                            <input type="text" id="report-location" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="e.g. Latifabad Unit 11, Hyderabad">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Category *</label>
+                                <select id="report-category" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                                    <option value="Vegetable">Vegetable</option>
+                                    <option value="Fruit">Fruit</option>
+                                    <option value="Poultry">Poultry</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Charged Price (Rs) *</label>
+                                <input type="number" id="report-charged-price" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="150">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Photo Proof (Shop / Receipt) *</label>
+                            <input type="file" id="report-photo" accept="image/*" required class="w-full text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Comments / Details</label>
+                            <textarea id="report-comments" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="Explain the overcharging details..."></textarea>
+                        </div>
+                        <button type="submit" id="submit-report-btn" class="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow transition">
+                            Submit Report & Claim Bonus
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!--  My Reports Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-folder-open text-emerald-600 mr-2"></i> My Submitted Reports
+                        <span id="my-reports-count" class="ml-2 text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">0</span>
+                    </h3>
+                    <button id="refresh-my-reports-btn" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                    </button>
+                </div>
+                <div id="my-reports-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+                    <div class="col-span-full text-center py-8 text-slate-400 text-sm">
+                        <i class="fa-solid fa-inbox text-3xl mb-2 block"></i>
+                        Loading your reports...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map & Action Feed -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-map-location-dot text-emerald-600 mr-2"></i> Overcharging Map (Hyderabad Region)
+                    </h3>
+                    <div id="map" class="w-full h-80 rounded-xl border border-slate-200"></div>
+                </div>
+                <div class="lg:col-span-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i> Govt Action Feed
+                    </h3>
+                    <div id="action-feed" class="space-y-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Redeem Modal -->
+    <div id="redeem-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 text-center shadow-2xl">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-ticket"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Redeem Discount Voucher</h3>
+            <p class="text-xs text-slate-500">Spend 100 points to generate an official SastaBazaar grocery voucher code!</p>
+            <button onclick="generateVoucher()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs rounded-xl transition">
+                Redeem 100 Points
+            </button>
+            <div id="voucher-result" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">Your Voucher Code</span>
+                <div id="voucher-code-text" class="text-lg font-mono font-bold text-emerald-700 tracking-wider"></div>
+            </div>
+            <button onclick="closeRedeemModal()" class="text-xs text-slate-400 hover:text-slate-600 font-semibold block mx-auto pt-2">Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

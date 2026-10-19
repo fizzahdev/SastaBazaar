@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SastaBazaar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #059669; }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { background: rgba(16, 185, 129, 0.1); transform: translateX(3px); }
+        .sidebar-link.active { background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .stat-card { transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -6px rgba(16, 185, 129, 0.25); }
+        .tab-btn.active { background: #10b981; color: white; }
+        .modal-backdrop { backdrop-filter: blur(4px); }
+        
+        /* Sidebar Transition */
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen overflow-x-hidden">
+
+    <!-- Mobile Overlay Background -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="admin-sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-slate-200 shadow-lg z-50 flex flex-col sidebar-transition -translate-x-full lg:translate-x-0">
+        <div class="p-5 border-b border-slate-200 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-xl shadow-md">
+                    <i class="fa-solid fa-scale-balanced text-lg text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-800">SastaBazaar</h1>
+                    <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Admin Panel</p>
+                </div>
+            </div>
+            <!-- Close Button (Mobile) -->
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-rose-500">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+            <a href="#overview" data-tab="overview" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-chart-pie w-5"></i><span>Overview</span>
+            </a>
+            <a href="#reports" data-tab="reports" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-flag w-5"></i><span>Reports</span>
+                <span id="sidebar-reports-count" class="ml-auto bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+            </a>
+            <a href="#users" data-tab="users" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-users w-5"></i><span>Users</span>
+                <span id="sidebar-users-count" class="ml-auto bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+            </a>
+            <a href="#rates" data-tab="rates" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-clipboard-list w-5"></i><span>Official Rates</span>
+            </a>
+            <a href="#feed" data-tab="feed" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-bullhorn w-5"></i><span>Action Feed</span>
+            </a>
+            <a href="#vouchers" data-tab="vouchers" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700" onclick="closeSidebarOnMobile()">
+                <i class="fa-solid fa-ticket w-5"></i><span>Vouchers</span>
+            </a>
+        </nav>
+
+        <div class="p-3 border-t border-slate-200">
+            <div class="bg-slate-50 rounded-xl p-3 mb-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-slate-800 truncate" id="admin-email">admin@...</p>
+                        <p class="text-[10px] text-slate-500">Administrator</p>
+                    </div>
+                </div>
+            </div>
+            <a href="index.html" class="w-full flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2.5 rounded-lg transition">
+                <i class="fa-solid fa-arrow-left"></i><span>Back to App</span>
+            </a>
+            <button id="admin-logout-btn" class="w-full mt-2 flex items-center justify-center space-x-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-2.5 rounded-lg transition">
+                <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen transition-all duration-300">
+        <!-- Top Bar -->
+        <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 sticky top-0 z-30 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <!-- Hamburger Button (Mobile) -->
+                <button onclick="toggleSidebar()" class="lg:hidden text-slate-600 hover:text-emerald-600 bg-slate-100 p-2 rounded-lg">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div>
+                    <h2 id="page-title" class="text-lg sm:text-xl font-bold text-slate-800">Overview</h2>
+                    <p id="page-subtitle" class="text-[10px] sm:text-xs text-slate-500">Welcome back, Admin!</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center space-x-2 bg-slate-100 px-3 py-2 rounded-lg">
+                    <i class="fa-solid fa-calendar text-slate-500 text-xs"></i>
+                    <span id="current-date" class="text-xs font-semibold text-slate-700"></span>
+                </div>
+                <div class="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white shadow">
+                    <i class="fa-solid fa-user-shield text-xs sm:text-sm"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Auth Guard -->
+        <section id="admin-auth-section" class="flex items-center justify-center min-h-[80vh] p-6">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-4">
+                <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Admin Access Required</h3>
+                <p class="text-xs text-slate-500">Please login with an admin account to access the dashboard.</p>
+                <a href="index.html" class="inline-block w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl transition text-sm">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Go to Login
+                </a>
+            </div>
+        </section>
+
+        <!-- Dashboard Content -->
+        <section id="admin-content" class="hidden p-4 sm:p-6 space-y-6">
+
+            <!-- TAB: Overview -->
+            <div id="tab-overview" class="tab-content space-y-6 fade-in">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Reports</p>
+                                <p id="stat-total-reports" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-flag text-rose-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2"><i class="fa-solid fa-arrow-trend-up text-emerald-600 mr-1"></i>All time reports</p>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Users</p>
+                                <p id="stat-total-users" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-users text-emerald-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2"><i class="fa-solid fa-user-plus text-emerald-600 mr-1"></i>Registered users</p>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending Review</p>
+                                <p id="stat-pending" class="text-3xl font-black text-amber-600 mt-1">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-clock text-amber-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2"><i class="fa-solid fa-hourglass-half text-amber-600 mr-1"></i>Awaiting action</p>
+                    </div>
+                    <div class="stat-card bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Points</p>
+                                <p id="stat-total-points" class="text-3xl font-black text-emerald-700 mt-1">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-star text-teal-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2"><i class="fa-solid fa-coins text-teal-600 mr-1"></i>Community rewards</p>
+                    </div>
+                </div>
+
+                <!-- Recent Reports & Feed -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center">
+                            <i class="fa-solid fa-clock-rotate-left text-rose-600 mr-2"></i>Recent Reports
+                        </h3>
+                        <div id="overview-recent-reports" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center">
+                            <i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Latest Actions
+                        </h3>
+                        <div id="overview-recent-feed" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Reports -->
+            <div id="tab-reports" class="tab-content hidden space-y-4 fade-in">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-flag text-rose-600 mr-2"></i>All Reports
+                        </h3>
+                        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                            <input type="text" id="admin-report-search" placeholder="Search shop..." class="w-full sm:w-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                            <select id="admin-report-filter" class="w-full sm:w-auto px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                                <option value="all">All Status</option>
+                                <option value="Under Review">Under Review</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="admin-reports-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-1"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Users -->
+            <div id="tab-users" class="tab-content hidden space-y-4 fade-in">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-users text-emerald-600 mr-2"></i>Registered Users
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px]">
+                                <tr>
+                                    <th class="p-3">#</th>
+                                    <th class="p-3">Email</th>
+                                    <th class="p-3">Points</th>
+                                    <th class="p-3">Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-table" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Rates -->
+            <div id="tab-rates" class="tab-content hidden space-y-4 fade-in">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-clipboard-list text-emerald-600 mr-2"></i>Official Rates
+                        </h3>
+                        <button onclick="openAddRateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-plus mr-1"></i>Add Rate
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-[10px]">
+                                <tr>
+                                    <th class="p-3">Item</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Unit</th>
+                                    <th class="p-3">Rate</th>
+                                    <th class="p-3">Updated</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-rates-table" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Feed -->
+            <div id="tab-feed" class="tab-content hidden space-y-4 fade-in">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Action Feed Entries
+                        </h3>
+                        <button onclick="openAddFeedModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold px-3 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-plus mr-1"></i>Add Action
+                        </button>
+                    </div>
+                    <div id="admin-feed-list" class="space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar pr-1"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Vouchers -->
+            <div id="tab-vouchers" class="tab-content hidden space-y-4 fade-in">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-ticket text-amber-600 mr-2"></i>Redeemed Vouchers
+                    </h3>
+                    <div id="admin-vouchers-list" class="space-y-3"></div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Add/Edit Rate Modal -->
+    <div id="rate-modal" class="fixed inset-0 bg-slate-900/50 modal-backdrop hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 id="rate-modal-title" class="text-lg font-bold text-slate-800">Add New Rate</h3>
+            <form id="rate-form" class="space-y-3 text-xs">
+                <input type="hidden" id="rate-edit-id">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Item Name *</label>
+                    <input type="text" id="rate-name" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Category *</label>
+                        <select id="rate-category" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                            <option value="Vegetable">Vegetable</option>
+                            <option value="Fruit">Fruit</option>
+                            <option value="Poultry">Poultry</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Unit *</label>
+                        <input type="text" id="rate-unit" required placeholder="per kg" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Rate (Rs) *</label>
+                    <input type="number" id="rate-value" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button type="button" onclick="closeRateModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Feed Modal -->
+    <div id="feed-modal" class="fixed inset-0 bg-slate-900/50 modal-backdrop hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800">Add Action Feed Entry</h3>
+            <form id="feed-form" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Shop Name *</label>
+                    <input type="text" id="feed-shop-name" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Action Taken *</label>
+                    <textarea id="feed-action" required rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" placeholder="e.g. Fined Rs. 5,000 for overcharging"></textarea>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button type="button" onclick="closeFeedModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-lg transition">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script File -->
+    <script type="module" src="admin.js"></script>
+
+    <!-- Sidebar Toggle Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function closeSidebarOnMobile() {
+            if (window.innerWidth < 1024) { // 1024px is Tailwind's 'lg' breakpoint
+                const sidebar = document.getElementById('admin-sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
